@@ -8,7 +8,8 @@ use std::collections::{HashMap};
 use rand::{Rng};
 
 fn main() {
-    let target: String = String::from("METHINKS IT IS LIKE A WEASEL");
+    let target = std::env::args().skip(1).next().unwrap_or("METHINKS IT IS LIKE A WEASEL".into());
+
     let mut parent: String = "".to_string();
     let nb_copy = 400;
     let mutation_rate : f64 = 0.05;

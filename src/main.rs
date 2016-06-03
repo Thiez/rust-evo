@@ -40,10 +40,16 @@ fn main() {
         sentences.clear();
         counter+=1;
 
-        sentences.extend(reproduction::generate_children(&parents[..], rng.clone())
-            .map(|sentence| mutate(sentence, random_chars(rng.clone()), rng.clone(), mutation_rate).collect::<Vec<_>>())
-            .map(|sentence| (fitness(&target, &sentence), sentence))
-            .take(nb_copy));
+        {
+            use reproduction::generate_children;
+            let mutate = |sentence|mutate(sentence, random_chars(rng.clone()), rng.clone(), mutation_rate);
+            let children = generate_children(&parents[..], rng.clone())
+                .map(mutate)
+                .map(Iterator::collect)
+                .map(|sentence| (fitness(&target, &sentence), sentence))
+                .take(nb_copy);
+            sentences.extend(children);
+        }
 
         sentences.sort_by_key(|tup|tup.0);
         parents.clear();

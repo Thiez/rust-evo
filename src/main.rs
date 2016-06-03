@@ -14,8 +14,9 @@ fn main() {
     let nb_copy = 400;
     let mutation_rate : f64 = 0.05;
     let mut counter=0;
+    let rng = &mut rand::thread_rng();
 
-    generate_first_sentence(&mut parent);
+    generate_first_sentence(&mut parent, rng);
 
     println!("{}", target);
     println!("{}", parent);
@@ -27,7 +28,7 @@ fn main() {
         counter+=1;
 
         for _ in 0..nb_copy {
-            let sentence = mutate(&mut parent, mutation_rate);
+            let sentence = mutate(&mut parent, mutation_rate, rng);
             let f = fitness(&target, &sentence);
 
             sentences.insert(f,sentence);
@@ -66,15 +67,13 @@ fn fitness(target: &String, sentence: &String) -> u32 {
 /// It mutates each character of a string, according to a `mutation_rate`.
 /// Please note that for full usefullness, `mutation_rate` should be between
 /// 0 and 1.
-fn mutate(sentence: &mut String, mutation_rate: f64) -> String {
-    let mut rng = rand::thread_rng();
+fn mutate<R: Rng>(sentence: &mut String, mutation_rate: f64, rng: &mut R) -> String {
     let mut mutation: String = "".to_string();
-
     for c in sentence.chars() {
         if mutation_rate > rng.gen_range(0f64, 1f64) {
             mutation.push(c);
         } else {
-            mutation.push(random_char());
+            mutation.push(random_char(rng));
         }
     }
 
@@ -82,15 +81,15 @@ fn mutate(sentence: &mut String, mutation_rate: f64) -> String {
 }
 
 /// Generates a random sentence of length 28 from completly random chars.
-fn generate_first_sentence(parent: &mut String) {
+fn generate_first_sentence<R: Rng>(parent: &mut String, rng: &mut R) {
     for _ in 0..28 {
-        parent.push(random_char());
+        parent.push(random_char(rng));
     }
 }
 
 /// Generates a random char (between 'A' and '\\').
-fn random_char() -> char {
-    match rand::thread_rng().gen_range('A' as u8, '\\' as u8) as char {
+fn random_char<R: Rng>(rng: &mut R) -> char {
+    match rng.gen_range('A' as u8, '\\' as u8) as char {
         '['     => ' ',
         c @ _   => c
     }

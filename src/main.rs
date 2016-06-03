@@ -40,7 +40,7 @@ fn main() {
         counter+=1;
 
         sentences.extend(reproduction::generate_children(&parents[..], rng.clone())
-            .map(|sentence| mutate(&sentence, mutation_rate, rng))
+            .map(|sentence| mutate(sentence, random_chars(rng.clone()), rng.clone(), mutation_rate).collect::<Vec<_>>())
             .map(|sentence| (fitness(&target, &sentence), sentence))
             .take(nb_copy));
 
@@ -57,34 +57,71 @@ fn main() {
 }
 
 /// Computes the fitness of a sentence against a target string.
-fn fitness(target: &[char], sentence: &[char]) -> u32 {
-    target.iter().zip(sentence.iter()).filter(|&(&c1, &c2)|c1 != c2).count() as u32
+fn fitness<T: Eq>(target: &[T], sentence: &[T]) -> u32 {
+    target.iter().zip(sentence.iter()).filter(|&(c1, c2)|c1 != c2).count() as u32
 }
 
-/// Mutation algorithm.
-///
-/// It mutates each character of a string, according to a `mutation_rate`.
-/// Please note that for full usefullness, `mutation_rate` should be between
-/// 0 and 1.
-fn mutate<R: Rng>(sentence: &[char], mutation_rate: f64, rng: &mut R) -> Vec<char> {
-    sentence.iter()
-        .map(|&c|if mutation_rate < rng.gen_range(0f64, 1.) { c } else { random_char(rng) })
-        .collect()
+struct MutatedGenes<I1, I2, R>
+    where
+        I1: Iterator,
+        I2: Iterator<Item=<I1 as Iterator>::Item>,
+        R: Rng
+{
+    original: I1,
+    mutations: I2,
+    rng: R,
+    mutation_chance: f64
+}
+
+impl<I1, I2, R> Iterator for MutatedGenes<I1, I2, R>
+    where
+        I1: Iterator,
+        I2: Iterator<Item=<I1 as Iterator>::Item>,
+        R: Rng
+{
+    type Item = <I1 as Iterator>::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.rng.gen_range(0.0, 1.0) < self.mutation_chance {
+            self.mutations.next().or(self.original.next())
+        } else {
+            self.original.next()
+        }
+    }
+}
+
+fn mutate<I1, I2, R>(original: I1, mutations: I2, rng: R, mutation_chance: f64) ->
+    MutatedGenes<<I1 as IntoIterator>::IntoIter, <I2 as IntoIterator>::IntoIter, R>
+    where
+        I1: IntoIterator,
+        I2: IntoIterator<Item=<I1 as IntoIterator>::Item>,
+        R: Rng
+{
+    MutatedGenes {
+        original: original.into_iter(),
+        mutations: mutations.into_iter(),
+        rng: rng,
+        mutation_chance: mutation_chance
+    }
 }
 
 /// Generates a random sentence of length `len` from completly random chars.
 fn generate_first_sentence<R: Rng>(len: usize, rng: &mut R) -> Vec<char> {
-    let mut result = Vec::new();
-    for _ in 0..len {
-        result.push(random_char(rng));
-    }
-
-    result
+    random_chars(rng).take(len).collect()
 }
 
-/// Generates a random char (between 'A' and '\\').
-fn random_char<R: Rng>(rng: &mut R) -> char {
-    AVAILABLE_CHARS[rng.gen_range(0, AVAILABLE_CHARS.len())]
+struct RandomCharacters<R: Rng> {
+    rng: R
+}
+
+impl<R: Rng> Iterator for RandomCharacters<R> {
+    type Item = char;
+    fn next(&mut self) -> Option<char> {
+        Some(AVAILABLE_CHARS[self.rng.gen_range(0, AVAILABLE_CHARS.len())])
+    }
+}
+
+fn random_chars<R: Rng>(rng: R) -> RandomCharacters<R> {
+    RandomCharacters { rng: rng }
 }
 
 mod reproduction {
@@ -92,6 +129,7 @@ mod reproduction {
     use std::ops::Deref;
     use rand::Rng;
 
+    /// An iterator that generates an endless stream of children. See `generate_children`.
     pub struct Children<'a, T, R>
         where
             &'a T: IntoIterator,
@@ -124,6 +162,9 @@ mod reproduction {
         }
     }
 
+    /// Create an iterator that produces an endless stream of children.
+    /// Each child is produced by picking two random parents (possibly the same parent!)
+    /// and grabbing material from either.
     pub fn generate_children<'a, T, R>(parents: &'a [T], rng: R) -> Children<'a, T, R>
         where
             &'a T: IntoIterator,

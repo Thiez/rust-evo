@@ -26,13 +26,14 @@ fn main() {
     let mutation_rate = 0.05f64;
     let mut counter = 0;
     let num_parents = 3;
-    let rng = &mut rand::thread_rng();
+    let mut rng = rand::thread_rng();
 
     let mut parents = Vec::new();
     for _ in 0..num_parents {
-        parents.push(generate_first_sentence(target.len(), rng));
+        parents.push(generate_first_sentence(target.len(), &mut rng));
     }
 
+    let rng = RcRng::new(rng);
     let mut f_min = std::u32::MAX;
     let mut sentences: Vec<(u32, Vec<char>)> = Vec::new();
     while f_min != 0 {
@@ -53,6 +54,21 @@ fn main() {
             f_min = new_f_min;
             println!("{} : {}", best.iter().cloned().collect::<String>(), counter);
         }
+    }
+}
+
+#[derive(Clone)]
+struct RcRng<R: Rng>(std::rc::Rc<std::cell::RefCell<R>>);
+
+impl<R: Rng> RcRng<R> {
+    fn new(rng: R) -> Self {
+        RcRng(std::rc::Rc::new(std::cell::RefCell::new(rng)))
+    }
+}
+
+impl<R: Rng> Rng for RcRng<R> {
+    fn next_u32(&mut self) -> u32 {
+        (self.0).borrow_mut().next_u32()
     }
 }
 
@@ -105,7 +121,7 @@ fn mutate<I1, I2, R>(original: I1, mutations: I2, rng: R, mutation_chance: f64) 
 }
 
 /// Generates a random sentence of length `len` from completly random chars.
-fn generate_first_sentence<R: Rng>(len: usize, rng: &mut R) -> Vec<char> {
+fn generate_first_sentence<R: Rng>(len: usize, rng: R) -> Vec<char> {
     random_chars(rng).take(len).collect()
 }
 

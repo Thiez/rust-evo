@@ -19,13 +19,11 @@ fn main() {
         panic!("Bad character: {}, permissable characters: {}", c, AVAILABLE_CHARS.iter().cloned().collect::<String>());
     }
 
-    let mut parent: String = "".to_string();
     let nb_copy = 400;
     let mutation_rate : f64 = 0.05;
     let mut counter=0;
     let rng = &mut rand::thread_rng();
-
-    generate_first_sentence(&mut parent, rng);
+    let mut parent = generate_first_sentence(target.len(), rng);
 
     println!("{}", target);
     println!("{}", parent);
@@ -74,11 +72,14 @@ fn mutate<R: Rng>(sentence: &mut String, mutation_rate: f64, rng: &mut R) -> Str
         .collect()
 }
 
-/// Generates a random sentence of length 28 from completly random chars.
-fn generate_first_sentence<R: Rng>(parent: &mut String, rng: &mut R) {
-    for _ in 0..28 {
-        parent.push(random_char(rng));
+/// Generates a random sentence of length `len` from completly random chars.
+fn generate_first_sentence<R: Rng>(len: usize, rng: &mut R) -> String {
+    let mut result = String::new();
+    for _ in 0..len {
+        result.push(random_char(rng));
     }
+
+    result
 }
 
 /// Generates a random char (between 'A' and '\\').

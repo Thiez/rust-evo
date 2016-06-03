@@ -77,16 +77,9 @@ fn fitness(target: &String, sentence: &String) -> u32 {
 /// Please note that for full usefullness, `mutation_rate` should be between
 /// 0 and 1.
 fn mutate<R: Rng>(sentence: &mut String, mutation_rate: f64, rng: &mut R) -> String {
-    let mut mutation: String = "".to_string();
-    for c in sentence.chars() {
-        if mutation_rate > rng.gen_range(0f64, 1f64) {
-            mutation.push(c);
-        } else {
-            mutation.push(random_char(rng));
-        }
-    }
-
-    mutation
+    sentence.chars()
+        .map(|c|if mutation_rate < rng.gen_range(0f64, 1.) { c } else { random_char(rng) })
+        .collect()
 }
 
 /// Generates a random sentence of length 28 from completly random chars.

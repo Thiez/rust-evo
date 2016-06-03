@@ -18,37 +18,39 @@ fn main() {
         panic!("Bad character: {}, permissable characters: {}", c, AVAILABLE_CHARS.iter().cloned().collect::<String>());
     }
 
-    let nb_copy = 400;
-    let mutation_rate : f64 = 0.05;
-    let mut counter=0;
-    let rng = &mut rand::thread_rng();
-    let mut parent = generate_first_sentence(target.len(), rng);
-
     println!("{}", target);
-    println!("{}", parent);
-    
-    while fitness(&target, &parent) != 0 {
-        let mut sentences: Vec<(u32, String)> = Vec::new();
-        let mut f_min: u32 = 30;
 
+    let nb_copy = 400;
+    let mutation_rate = 0.05f64;
+    let mut counter = 0;
+    let num_parents = 3;
+    let rng = &mut rand::thread_rng();
+
+    let mut parents = Vec::new();
+    for _ in 0..num_parents {
+        parents.push(generate_first_sentence(target.len(), rng));
+    }
+
+    let mut f_min = std::u32::MAX;
+    while f_min != 0 {
+        let mut sentences: Vec<(u32, String)> = Vec::new();
         counter+=1;
 
         for _ in 0..nb_copy {
-            let sentence = mutate(&mut parent, mutation_rate, rng);
+            let sentence = generate_child(&parents, rng);
+            let sentence = mutate(&sentence, mutation_rate, rng);
             let f = fitness(&target, &sentence);
             sentences.push((f,sentence));
-            f_min = std::cmp::min(f, f_min);
         }
         
-        if fitness(&target, &parent) > f_min {
-            sentences.sort_by_key(|tup|tup.0);
-            match sentences.get(0) {
-                Some(&(_, ref s)) => {
-                    parent = s.clone();
-                    println!("{} : {}", parent, counter);
-                },
-                None => panic!("Error, fitness minimum but no sentence."),
-            }
+        sentences.sort_by_key(|tup|tup.0);
+        parents.clear();
+        parents.extend(sentences.drain(..).take(num_parents).map(|tup|tup.1));
+        let best = &parents[0];
+        let new_f_min = fitness(&target, best);
+        if new_f_min < f_min {
+            f_min = new_f_min;
+            println!("{} : {}", best, counter);
         }
     }
 }
@@ -63,7 +65,7 @@ fn fitness(target: &str, sentence: &str) -> u32 {
 /// It mutates each character of a string, according to a `mutation_rate`.
 /// Please note that for full usefullness, `mutation_rate` should be between
 /// 0 and 1.
-fn mutate<R: Rng>(sentence: &mut String, mutation_rate: f64, rng: &mut R) -> String {
+fn mutate<R: Rng>(sentence: &str, mutation_rate: f64, rng: &mut R) -> String {
     sentence.chars()
         .map(|c|if mutation_rate < rng.gen_range(0f64, 1.) { c } else { random_char(rng) })
         .collect()
@@ -82,4 +84,11 @@ fn generate_first_sentence<R: Rng>(len: usize, rng: &mut R) -> String {
 /// Generates a random char (between 'A' and '\\').
 fn random_char<R: Rng>(rng: &mut R) -> char {
     AVAILABLE_CHARS[rng.gen_range(0, AVAILABLE_CHARS.len())]
+}
+
+/// Picks two parents and mixes them together.
+fn generate_child<R: Rng>(parents: &[String], rng: &mut R) -> String {
+    let parent1 = rng.choose(parents).expect("at leats one parent");
+    let parent2 = rng.choose(parents).expect("at least one parent");
+    parent1.chars().zip(parent2.chars()).map(|(c1, c2)|*rng.choose(&[c1, c2]).unwrap()).collect()
 }

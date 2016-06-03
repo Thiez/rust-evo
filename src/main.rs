@@ -7,8 +7,17 @@ extern crate rand;
 use std::collections::{HashMap};
 use rand::{Rng};
 
+static AVAILABLE_CHARS: &'static [char] = &[
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+    'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
+    'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' '
+];
+
 fn main() {
     let target = std::env::args().skip(1).next().unwrap_or("METHINKS IT IS LIKE A WEASEL".into());
+    for c in target.chars().filter(|c|!AVAILABLE_CHARS.contains(c)) {
+        panic!("Bad character: {}, permissable characters: {}", c, AVAILABLE_CHARS.iter().cloned().collect::<String>());
+    }
 
     let mut parent: String = "".to_string();
     let nb_copy = 400;
@@ -89,8 +98,5 @@ fn generate_first_sentence<R: Rng>(parent: &mut String, rng: &mut R) {
 
 /// Generates a random char (between 'A' and '\\').
 fn random_char<R: Rng>(rng: &mut R) -> char {
-    match rng.gen_range('A' as u8, '\\' as u8) as char {
-        '['     => ' ',
-        c @ _   => c
-    }
+    AVAILABLE_CHARS[rng.gen_range(0, AVAILABLE_CHARS.len())]
 }

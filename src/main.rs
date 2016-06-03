@@ -32,8 +32,9 @@ fn main() {
     }
 
     let mut f_min = std::u32::MAX;
+    let mut sentences: Vec<(u32, String)> = Vec::new();
     while f_min != 0 {
-        let mut sentences: Vec<(u32, String)> = Vec::new();
+        sentences.clear();
         counter+=1;
 
         for _ in 0..nb_copy {
@@ -42,7 +43,7 @@ fn main() {
             let f = fitness(&target, &sentence);
             sentences.push((f,sentence));
         }
-        
+
         sentences.sort_by_key(|tup|tup.0);
         parents.clear();
         parents.extend(sentences.drain(..).take(num_parents).map(|tup|tup.1));

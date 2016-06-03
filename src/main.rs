@@ -23,7 +23,7 @@ fn main() {
     println!("{}", target.iter().cloned().collect::<String>());
 
     let nb_copy = 400;
-    let mutation_rate = 0.05f64;
+    let mut mutation_rate = 0.05f64;
     let mut counter = 0;
     let num_parents = 3;
     let mut rng = rand::thread_rng();
@@ -39,6 +39,8 @@ fn main() {
     while f_min != 0 {
         sentences.clear();
         counter+=1;
+        mutation_rate = mutation_rate * 0.999;
+        if mutation_rate < 0.00001 { mutation_rate = 0.00001 }
 
         {
             use reproduction::generate_children;
@@ -59,6 +61,7 @@ fn main() {
         if new_f_min < f_min {
             f_min = new_f_min;
             println!("{} : {}", best.iter().cloned().collect::<String>(), counter);
+            println!("{}", mutation_rate);
         }
     }
 }

@@ -4,7 +4,6 @@
 
 extern crate rand;
 
-use std::collections::{HashMap};
 use rand::{Rng};
 
 static AVAILABLE_CHARS: &'static [char] = &[
@@ -29,7 +28,7 @@ fn main() {
     println!("{}", parent);
     
     while fitness(&target, &parent) != 0 {
-        let mut sentences: HashMap<u32, String> = HashMap::new();
+        let mut sentences: Vec<(u32, String)> = Vec::new();
         let mut f_min: u32 = 30;
 
         counter+=1;
@@ -37,16 +36,14 @@ fn main() {
         for _ in 0..nb_copy {
             let sentence = mutate(&mut parent, mutation_rate, rng);
             let f = fitness(&target, &sentence);
-
-            sentences.insert(f,sentence);
-            if f<f_min {
-                f_min = f;
-            }
+            sentences.push((f,sentence));
+            f_min = std::cmp::min(f, f_min);
         }
         
         if fitness(&target, &parent) > f_min {
-            match sentences.get(&f_min) {
-                Some(s) => {
+            sentences.sort_by_key(|tup|tup.0);
+            match sentences.get(0) {
+                Some(&(_, ref s)) => {
                     parent = s.clone();
                     println!("{} : {}", parent, counter);
                 },

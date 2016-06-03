@@ -59,16 +59,8 @@ fn main() {
 }
 
 /// Computes the fitness of a sentence against a target string.
-fn fitness(target: &String, sentence: &String) -> u32 {
-    let mut fitness = 0;
-
-    for (c1, c2) in target.chars().zip(sentence.chars()) {
-        if c1 != c2 {
-            fitness += 1;
-        }
-    }
-
-    fitness
+fn fitness(target: &str, sentence: &str) -> u32 {
+    target.chars().zip(sentence.chars()).map(|(c1, c2)| if c1 != c2 { 1 } else { 0 }).fold(0, |s, n| s + n)
 }
 
 /// Mutation algorithm.

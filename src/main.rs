@@ -73,8 +73,22 @@ impl<R: Rng> Rng for RcRng<R> {
 }
 
 /// Computes the fitness of a sentence against a target string.
-fn fitness<T: Eq>(target: &[T], sentence: &[T]) -> u32 {
-    target.iter().zip(sentence.iter()).filter(|&(c1, c2)|c1 != c2).count() as u32
+fn fitness<I1, I2>(target: I1, attempt: I2) -> u32
+    where
+        I1: IntoIterator,
+        <I1 as IntoIterator>::Item: Eq,
+        I2: IntoIterator<Item=<I1 as IntoIterator>::Item>,
+{
+    let mut target = target.into_iter();
+    let mut attempt = attempt.into_iter();
+    let mut sum = 0;
+    loop {
+        match (target.next(), attempt.next()) {
+            (Some(ref a), Some(ref b)) if a == b => (),
+            (None, None) => return sum,
+            _ => sum += 1
+        }
+    }
 }
 
 struct MutatedGenes<I1, I2, R>
@@ -97,10 +111,11 @@ impl<I1, I2, R> Iterator for MutatedGenes<I1, I2, R>
 {
     type Item = <I1 as Iterator>::Item;
     fn next(&mut self) -> Option<Self::Item> {
-        if self.rng.gen_range(0.0, 1.0) < self.mutation_chance {
-            self.mutations.next().or(self.original.next())
+        let good = self.original.next();
+        if good.is_some() && self.rng.gen_range(0.0, 1.0) < self.mutation_chance {
+            self.mutations.next()
         } else {
-            self.original.next()
+            good
         }
     }
 }
